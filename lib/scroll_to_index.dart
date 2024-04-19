@@ -144,7 +144,23 @@ class PageAutoScrollController extends PageController
   }
 }
 
-enum AutoScrollPosition { begin, middle, end }
+enum AutoScrollPosition {
+  begin(0.0),
+  middle(0.5),
+  end(1.0),
+  custom;
+
+  const AutoScrollPosition(this.position);
+  factory AutoScrollPosition.custom(double customPosition) => AutoScrollPosition.custom..position = customPosition;
+  factory AutoScrollPosition.fromPosition(double position) {
+    if (position == 0.0) return AutoScrollPosition.begin;
+    if (position == 0.5) return AutoScrollPosition.middle;
+    if (position == 1.0) return AutoScrollPosition.end;
+    return AutoScrollPosition.custom(position);
+  };
+  
+  final double position;
+}
 mixin AutoScrollControllerMixin on ScrollController
     implements AutoScrollController {
   @override
@@ -298,7 +314,7 @@ mixin AutoScrollControllerMixin on ScrollController
 
       if (contains && hasClients) {
         await _bringIntoViewportIfNeed(
-            index, preferPosition ?? _alignmentToPosition(lastScrollDirection),
+            index, preferPosition ?? AutoScrollPosition.fromPosition(lastScrollDirection),
             (finalOffset) async {
           if (finalOffset != offset) {
             _isAutoScrolling = true;
@@ -405,7 +421,7 @@ mixin AutoScrollControllerMixin on ScrollController
 
     if (preferPosition != null) {
       double targetOffset = _directionalOffsetToRevealInViewport(
-          index, _positionToAlignment(preferPosition));
+          index, preferPosition.position);
 
       // The content preferred position might be impossible to reach
       // for items close to the edges of the scroll content, e.g.
@@ -434,20 +450,6 @@ mixin AutoScrollControllerMixin on ScrollController
       }
     }
   }
-
-  double _positionToAlignment(AutoScrollPosition position) {
-    return position == AutoScrollPosition.begin
-        ? 0
-        : position == AutoScrollPosition.end
-            ? 1
-            : 0.5;
-  }
-
-  AutoScrollPosition _alignmentToPosition(double alignment) => alignment == 0
-      ? AutoScrollPosition.begin
-      : alignment == 1
-          ? AutoScrollPosition.end
-          : AutoScrollPosition.middle;
 
   /// return offset, which is a absolute offset to bring the target index object into the location(depends on [direction]) of viewport
   /// see also: _offsetYToRevealInViewport()
